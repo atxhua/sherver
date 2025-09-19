@@ -92,7 +92,7 @@ EOF
 
 export HEAD_TEMPLATE HEADER_TEMPLATE BODY_TEMPLATE FOOTER_TEMPLATE INLINE_SCRIPT
 
-html=$(envsubt_alternative < 'templates/template.html')
+html=$(envsubt_alternative 'templates/template.html')
 
 add_header 'Content-Type' 'text/html; charset=utf-8'
 send_response 200 "$html"
