@@ -377,7 +377,6 @@ function send_file()
 	# response
 	cat "$file"
 	log '================================================'
-	fi
 	exit 0
 }
 export -f send_file
