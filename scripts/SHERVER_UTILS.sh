@@ -314,14 +314,21 @@ function get_mimetype() {
       png) mimetype="image/png" ;;
       gif) mimetype="image/gif" ;;
       webp) mimetype="image/webp" ;;
+      svg) mimetype="image/svg+xml" ;;
       html|htm) mimetype="text/html" ;;
       txt|log|sh|conf) mimetype="text/plain" ;;
       json) mimetype="application/json" ;;
+      xml) mimetype="application/xml" ;;
+      css) mimetype="text/css" ;;
+      js) mimetype="text/javascript" ;;
+      woff) mimetype="font/woff" ;;
+      woff2) mimetype="font/woff2" ;;
       *) mimetype="application/octet-stream" ;;
     esac
   fi
   echo "$mimetype"
 }
+export -f get_mimetype
 
 # Public: Try to send the given file, or fail with 404.
 #
@@ -500,3 +507,13 @@ $line"
 	fi
 }
 export -f read_request
+
+# Do not depends on envsubt
+envsubt_alternative() {
+  local file="$1"
+
+  while read line; do
+    eval "echo \"$line\""
+  done <  "$file"
+}
+export -f envsubt_alternative
