@@ -295,6 +295,34 @@ EOF
 }
 export -f send_error
 
+# Determine Mimetype without perl dependencies
+# Usage:
+#     get_mimetype '/path/to/the/file'
+#     --------------------------------
+#	  OR: 
+#     add_header 'Content-Type' $(get_mimetype "$file")
+function get_mimetype() {
+  local file="$1"
+  local mimetype="application/octet-stream"
+
+  if command -v file > /dev/null 2>&1; then
+    mimetype=$(file -b --mime-type "$file" 2>/dev/null || echo "$mimetype")
+  else
+    local ext="${file##*.}"
+    case "${ext,,}" in  # Convert extension to lowercase for case-insensitive matching
+      jpg|jpeg) mimetype="image/jpeg" ;;
+      png) mimetype="image/png" ;;
+      gif) mimetype="image/gif" ;;
+      webp) mimetype="image/webp" ;;
+      html|htm) mimetype="text/html" ;;
+      txt|log|sh|conf) mimetype="text/plain" ;;
+      json) mimetype="application/json" ;;
+      *) mimetype="application/octet-stream" ;;
+    esac
+  fi
+  echo "$mimetype"
+}
+
 # Public: Try to send the given file, or fail with 404.
 #
 # Takes the path to the file to send as a parameter.
@@ -329,24 +357,19 @@ function send_file()
 		send_error 404
 	fi
 
-	# we create an ETag
-	local etag
-	etag="$(stat -c '%s-%y-%z' "$file")"
-	add_header 'ETag' "$etag"
-	# if client already cached it, we don't resend it
-	if [ -v "REQUEST_HEADERS['If-None-Match']" ] && [ "${REQUEST_HEADERS['If-None-Match']}" = "$etag" ]; then
-		send_response 304 ''
-	else
-		# HTTP header
-		local content_type content_length
-		content_type=$("$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/utils/mimetype" -b "$file")
-		content_length=$(stat -c '%s' "$file")
-		add_header 'Content-Type'   "$content_type";
-		add_header 'Content-Length' "$content_length"
-		_send_header 200
-		# response
-		cat "$file"
-		log '================================================'
+	# HTTP header
+	local content_type content_length
+	content_type=$(get_mimetype "$file")
+	content_length=$(wc -c < "$file")
+	add_header 'Content-Type'   "$content_type";
+	add_header 'Content-Length' "$content_length"
+	add_header 'Cache-Control' 'no-store, no-cache, must-revalidate, proxy-revalidate'
+	add_header  'Pragma' 'no-cache'
+	add_header 'Expires' '0'
+	_send_header 200
+	# response
+	cat "$file"
+	log '================================================'
 	fi
 	exit 0
 }
